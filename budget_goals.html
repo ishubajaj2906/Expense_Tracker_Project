@@ -1,0 +1,258 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Budget & Goals - Expense Tracker</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet"/>
+  <link rel="stylesheet" href="styles.css"/>
+</head>
+<body>
+  <script>
+    const currentUserEmail = localStorage.getItem("currentUserEmail");
+    if (!localStorage.getItem("isLoggedIn") || !currentUserEmail) {
+      alert("User not logged in. Redirecting...");
+      window.location.href = "login.html";
+    }
+  </script>
+
+  <!-- Navbar -->
+  <nav class="navbar navbar-dark navbar-expand-lg bg-dark">
+    <div class="container">
+      <a class="navbar-brand fw-bold" href="index.html">💰 Expense Tracker</a>
+      <div class="dropdown ms-auto">
+        <button class="btn btn-light position-relative" id="notificationButton" onclick="toggleNotifications()">
+          🔔 Notifications <span class="badge bg-danger" id="notificationCount">0</span>
+        </button>
+        <ul class="dropdown-menu dropdown-menu-end p-3" id="notificationDropdown" style="display: none;">
+          <h6 class="dropdown-header">Notifications</h6>
+          <ul class="list-group" id="notificationList">
+            <li class="list-group-item text-center">No new notifications</li>
+          </ul>
+        </ul>
+        <button class="btn btn-danger ms-2" onclick="logout()">Logout</button>
+      </div>
+    </div>
+  </nav>
+
+  <!-- Main Content -->
+  <div class="container mt-5">
+    <h1 class="text-center mb-4">Set Your Budget & Financial Goals</h1>
+    <div class="card p-4 shadow-lg">
+      <h3 class="mb-3">Set Monthly Income & Budget</h3>
+      <form id="budgetForm">
+        <div class="mb-3">
+          <label for="monthlyIncome" class="form-label">Your Monthly Income (₹)</label>
+          <input type="number" class="form-control" id="monthlyIncome" min="1" required />
+        </div>
+
+        <div class="mb-3">
+          <label class="form-label">Fixed Expenses (₹)</label>
+          <div class="row text-center">
+            <div class="col">
+              <label for="rentExpense" class="form-label">Rent</label>
+              <input type="number" class="form-control" id="rentExpense" placeholder="₹" min="0" />
+            </div>
+            <div class="col">
+              <label for="medicalExpense" class="form-label">Medical</label>
+              <input type="number" class="form-control" id="medicalExpense" placeholder="₹" min="0" />
+            </div>
+            <div class="col">
+              <label for="emiExpense" class="form-label">EMI</label>
+              <input type="number" class="form-control" id="emiExpense" placeholder="₹" min="0" />
+            </div>
+            <div class="col">
+              <label for="otherFixedExpense" class="form-label">Others</label>
+              <input type="number" class="form-control" id="otherFixedExpense" placeholder="₹" min="0" />
+            </div>
+          </div>
+        </div>
+
+        <div class="mb-3">
+          <label for="monthlyBudget" class="form-label">Your Monthly Budget (₹)</label>
+          <input type="number" class="form-control" id="monthlyBudget" min="1" required />
+        </div>
+
+        <h3 class="mb-3 mt-4">Set Financial Goals</h3>
+        <div class="mb-3">
+          <label for="financialGoal" class="form-label">Your Savings Goal (₹)</label>
+          <input type="number" class="form-control" id="financialGoal" min="1" required />
+        </div>
+
+        <button type="submit" class="btn btn-success w-100 mt-3">Save Budget & Goals</button>
+      </form>
+
+      <div id="goalDisplay" class="text-center mt-3 fw-bold"></div>
+    </div>
+
+    <!-- 50-30-20 Rule Recommendation -->
+    <!-- <div class="card p-4 mt-4 shadow-lg">
+      <h3 class="text-center">Recommended Budget Allocation</h3>
+      <p class="text-center">Based on the 50-30-20 rule (after fixed expenses):</p>
+      <ul class="list-group">
+        <li class="list-group-item"><strong>Needs (50%):</strong> ₹<span id="needsAmount">0</span></li>
+        <li class="list-group-item"><strong>Wants (30%):</strong> ₹<span id="wantsAmount">0</span></li>
+        <li class="list-group-item"><strong>Savings (20%):</strong> ₹<span id="savingsAmount">0</span></li>
+      </ul>
+    </div> -->
+
+    <!-- CA-Approved Budget Recommendation -->
+    <div class="card p-4 mt-4 shadow-lg">
+      <div class="row">
+        <div class="col-md-6 offset-md-3">
+          <h3 class="text-center">Recommended Budget Allocation</h3>
+          <p class="text-center">Based on CA-approved guidelines:</p>
+          <ul class="list-group">
+            <li class="list-group-item"><strong>Fixed Expenses (≤ 50%):</strong> ₹<span id="fixedExpensesAmount">0</span></li>
+            <li class="list-group-item"><strong>Living Expenses (20%-30%):</strong> ₹<span id="livingExpensesAmount">0</span></li>
+            <li class="list-group-item"><strong>Lifestyle Expenses (≤ 20%):</strong> ₹<span id="lifestyleExpensesAmount">0</span></li>
+            <li class="list-group-item"><strong>Savings & Investments (≥ 20%-30%):</strong> ₹<span id="savingsInvestmentsAmount">0</span></li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <!-- Goal Progress Section -->
+    <div class="card p-4 mt-4 shadow-lg">
+      <div id="impulseWarning" class="mt-3 text-center"></div>
+
+      <div class="mt-5">
+        <h3 class="text-center">Goal Progress</h3>
+        <div class="progress mt-2" style="height: 25px;">
+          <div id="goalProgressBar" class="progress-bar bg-success" role="progressbar" style="width: 0%;">0%</div>
+        </div>
+        <p class="text-center mt-2"><strong id="progressText">Track your savings goal progress here!</strong></p>
+      </div>
+    </div>
+  </div>
+
+  <footer class="text-center mt-5">
+    <p>&copy; 2025 Expense Tracker | Plan your goals 🎯</p>
+  </footer>
+
+  <!-- Script Section -->
+  <script>
+    function getUserBudgetData() {
+      const allBudgets = JSON.parse(localStorage.getItem("budgets")) || {};
+      return allBudgets[currentUserEmail] || {
+        income: 0,
+        budget: 0,
+        goal: 0,
+        fixed: { rent: 0, medical: 0, emi: 0, others: 0 }
+      };
+    }
+
+    function saveUserBudgetData(data) {
+      let allBudgets = JSON.parse(localStorage.getItem("budgets")) || {};
+      allBudgets[currentUserEmail] = data;
+      localStorage.setItem("budgets", JSON.stringify(allBudgets));
+      let flatBudgets = JSON.parse(localStorage.getItem("budgetsFlat")) || {};
+      flatBudgets[currentUserEmail] = data.budget;
+      localStorage.setItem("budgetsFlat", JSON.stringify(flatBudgets));
+      localStorage.setItem("userBudget", data.budget);
+    }
+
+    function getUserExpenses() {
+      const expenses = JSON.parse(localStorage.getItem("expenses")) || {};
+      return expenses[currentUserEmail] || [];
+    }
+
+    function updateProgress() {
+      const userData = getUserBudgetData();
+      const userExpenses = getUserExpenses();
+      const totalSpent = userExpenses.reduce((sum, exp) => sum + Number(exp.amount), 0);
+
+      let progress = 0;
+      if (userData.goal > 0) {
+        progress = Math.min((totalSpent / userData.budget) * 100, 100);
+      }
+
+      document.getElementById("goalProgressBar").style.width = `${progress}%`;
+      document.getElementById("goalProgressBar").textContent = `${progress.toFixed(1)}%`;
+      document.getElementById("progressText").textContent = `You've spent ₹${totalSpent} out of your monthly budget of ₹${userData.budget}.`;
+
+      warnImpulseBuying(userExpenses);
+    }
+
+    function warnImpulseBuying(expenses) {
+      const discretionaryCategories = ["shopping", "entertainment", "dining", "luxury"];
+      const impulseThreshold = 0.3;
+      const userData = getUserBudgetData();
+      if (userData.income <= 0) return;
+
+      const discretionarySpending = expenses
+        .filter(exp => discretionaryCategories.includes(exp.category))
+        .reduce((sum, exp) => sum + Number(exp.amount), 0);
+
+      const discretionaryLimit = userData.income * impulseThreshold;
+      const warningMessage = document.getElementById("impulseWarning");
+
+      if (discretionarySpending > discretionaryLimit) {
+        warningMessage.innerHTML = `⚠ You are overspending on discretionary items! Consider prioritizing savings and essentials.`;
+        warningMessage.classList.add("alert", "alert-warning");
+      } else {
+        warningMessage.innerHTML = "";
+        warningMessage.classList.remove("alert", "alert-warning");
+      }
+    }
+
+    function updateBudgetRecommendation() {
+      const income = Number(document.getElementById("monthlyIncome").value);
+      const rent = Number(document.getElementById("rentExpense").value);
+      const medical = Number(document.getElementById("medicalExpense").value);
+      const emi = Number(document.getElementById("emiExpense").value);
+      const others = Number(document.getElementById("otherFixedExpense").value);
+
+      const fixedTotal = rent + medical + emi + others;
+      const remaining = income - fixedTotal;
+
+      document.getElementById("needsAmount").textContent = (remaining * 0.5).toFixed(2);
+      document.getElementById("wantsAmount").textContent = (remaining * 0.3).toFixed(2);
+      document.getElementById("savingsAmount").textContent = (remaining * 0.2).toFixed(2);
+
+      document.getElementById("fixedExpensesAmount").textContent = (income * 0.5).toFixed(2);
+      document.getElementById("livingExpensesAmount").textContent = (income * 0.25).toFixed(2);
+      document.getElementById("lifestyleExpensesAmount").textContent = (income * 0.2).toFixed(2);
+      document.getElementById("savingsInvestmentsAmount").textContent = (income * 0.25).toFixed(2);
+    }
+
+    function renderBudgetData() {
+      const userData = getUserBudgetData();
+      document.getElementById("monthlyIncome").value = userData.income;
+      document.getElementById("monthlyBudget").value = userData.budget;
+      document.getElementById("financialGoal").value = userData.goal;
+      document.getElementById("rentExpense").value = userData.fixed?.rent || 0;
+      document.getElementById("medicalExpense").value = userData.fixed?.medical || 0;
+      document.getElementById("emiExpense").value = userData.fixed?.emi || 0;
+      document.getElementById("otherFixedExpense").value = userData.fixed?.others || 0;
+      updateProgress();
+      updateBudgetRecommendation();
+    }
+
+    document.getElementById("budgetForm").addEventListener("submit", function (e) {
+      e.preventDefault();
+      const data = {
+        income: Number(document.getElementById("monthlyIncome").value),
+        budget: Number(document.getElementById("monthlyBudget").value),
+        goal: Number(document.getElementById("financialGoal").value),
+        fixed: {
+          rent: Number(document.getElementById("rentExpense").value),
+          medical: Number(document.getElementById("medicalExpense").value),
+          emi: Number(document.getElementById("emiExpense").value),
+          others: Number(document.getElementById("otherFixedExpense").value)
+        }
+      };
+      saveUserBudgetData(data);
+      renderBudgetData();
+      alert("✅ Budget and goals saved successfully!");
+    });
+
+    function logout() {
+      localStorage.clear();
+      window.location.href = "login.html";
+    }
+
+    document.addEventListener("DOMContentLoaded", renderBudgetData);
+  </script>
+</body>
+</html>

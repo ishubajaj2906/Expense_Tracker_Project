@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Profile - Expense Tracker</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet"/>
+  <link rel="stylesheet" href="styles.css"/>
+</head>
+<body>
+  <script>
+    if (!localStorage.getItem("isLoggedIn")) {
+        window.location.href = "login.html";
+    }
+  </script>
+
+  <!-- Navbar -->
+  <nav class="navbar navbar-dark navbar-expand-lg bg-dark">
+    <div class="container">
+        <a class="navbar-brand fw-bold" href="index.html">💰 Expense Tracker</a>
+        <div class="d-flex">
+        <button class="btn btn-danger" onclick="logout()">Logout</button>
+      </div>
+    </div>
+  </nav>
+
+  <div class="container mt-5">
+    <h2 class="text-center">Profile Settings</h2>
+
+    <!-- User Info -->
+    <div class="card p-4 mt-4">
+      <h4>Your Info</h4>
+      <p><strong>Name:</strong> <span id="userName">Loading...</span></p>
+      <p><strong>Email:</strong> <span id="userEmail">Loading...</span></p>
+    </div>
+
+    <!-- Update Profile Name -->
+    <div class="card p-4 mt-4">
+      <h4>Update Profile Name</h4>
+      <div class="mb-3">
+        <label for="profileName" class="form-label">New Name</label>
+        <input type="text" class="form-control" id="profileName" required>
+      </div>
+      <button class="btn btn-primary w-100" onclick="updateProfile()">Update Name</button>
+    </div>
+
+    <!-- Change Password -->
+    <div class="card p-4 mt-4">
+      <h4>Change Password</h4>
+      <div class="mb-3">
+        <label for="currentPassword" class="form-label">Current Password</label>
+        <input type="password" class="form-control" id="currentPassword" required>
+      </div>
+      <div class="mb-3">
+        <label for="newPassword" class="form-label">New Password</label>
+        <input type="password" class="form-control" id="newPassword" required>
+      </div>
+      <button class="btn btn-danger w-100" onclick="changePassword()">Change Password</button>
+    </div>
+
+    <!-- Delete Account -->
+    <div class="card p-4 mt-4">
+      <h4>Delete Account</h4>
+      <p class="text-danger">Warning: This will remove all your data permanently.</p>
+      <button class="btn btn-outline-danger w-100" onclick="deleteAccount()">Delete My Account</button>
+    </div>
+
+    <!-- Help -->
+    <div class="text-center mt-4 text-muted">
+      <small>Need help? Contact support@expensetracker.com</small>
+    </div>
+  </div>
+
+  <script>
+    const currentUserEmail = localStorage.getItem("currentUserEmail");
+
+    window.onload = () => {
+      let users = JSON.parse(localStorage.getItem("users")) || [];
+      let user = users.find(u => u.email === currentUserEmail);
+
+      if (user) {
+        document.getElementById("userName").textContent = user.name || "Not set";
+        document.getElementById("userEmail").textContent = user.email;
+        document.getElementById("profileName").value = user.name || "";
+      }
+    };
+
+    function updateProfile() {
+      let users = JSON.parse(localStorage.getItem("users")) || [];
+      let userIndex = users.findIndex(u => u.email === currentUserEmail);
+
+      if (userIndex !== -1) {
+        let newName = document.getElementById("profileName").value.trim();
+        if (newName === "") {
+          alert("Name cannot be empty.");
+          return;
+        }
+        users[userIndex].name = newName;
+        localStorage.setItem("users", JSON.stringify(users));
+        alert("Profile name updated successfully!");
+        location.reload(); // Refresh to show updated name
+      } else {
+        alert("User not found.");
+      }
+    }
+
+    function changePassword() {
+      let users = JSON.parse(localStorage.getItem("users")) || [];
+      let userIndex = users.findIndex(u => u.email === currentUserEmail);
+
+      if (userIndex !== -1) {
+        let currentPassword = document.getElementById("currentPassword").value;
+        let newPassword = document.getElementById("newPassword").value;
+
+        if (users[userIndex].password === currentPassword) {
+          users[userIndex].password = newPassword;
+          localStorage.setItem("users", JSON.stringify(users));
+          alert("Password changed successfully!");
+        } else {
+          alert("Current password is incorrect.");
+        }
+      } else {
+        alert("User not found.");
+      }
+    }
+
+    function deleteAccount() {
+      if (confirm("Are you sure you want to delete your account? This cannot be undone.")) {
+        let users = JSON.parse(localStorage.getItem("users")) || [];
+        users = users.filter(u => u.email !== currentUserEmail);
+        localStorage.setItem("users", JSON.stringify(users));
+        logout();
+      }
+    }
+
+    function logout() {
+      localStorage.removeItem("isLoggedIn");
+      localStorage.removeItem("currentUserEmail");
+      window.location.href = "login.html";
+    }
+  </script>
+</body>
+</html>

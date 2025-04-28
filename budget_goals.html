@@ -117,7 +117,7 @@
       <div id="impulseWarning" class="mt-3 text-center"></div>
 
       <div class="mt-5">
-        <h3 class="text-center">Goal Progress</h3>
+        <h3 class="text-center">Budget Usage</h3>
         <div class="progress mt-2" style="height: 25px;">
           <div id="goalProgressBar" class="progress-bar bg-success" role="progressbar" style="width: 0%;">0%</div>
         </div>
@@ -203,17 +203,23 @@
       const emi = Number(document.getElementById("emiExpense").value);
       const others = Number(document.getElementById("otherFixedExpense").value);
 
-      const fixedTotal = rent + medical + emi + others;
-      const remaining = income - fixedTotal;
+      // Calculate fixed expenses (EMI + Rent)
+      const fixedExpenses = rent + emi;
 
-      document.getElementById("needsAmount").textContent = (remaining * 0.5).toFixed(2);
-      document.getElementById("wantsAmount").textContent = (remaining * 0.3).toFixed(2);
-      document.getElementById("savingsAmount").textContent = (remaining * 0.2).toFixed(2);
+      // Calculate living expenses (20%-30% of income)
+      const livingExpenses = income * 0.25; // Assuming 25% as the midpoint
 
-      document.getElementById("fixedExpensesAmount").textContent = (income * 0.5).toFixed(2);
-      document.getElementById("livingExpensesAmount").textContent = (income * 0.25).toFixed(2);
-      document.getElementById("lifestyleExpensesAmount").textContent = (income * 0.2).toFixed(2);
-      document.getElementById("savingsInvestmentsAmount").textContent = (income * 0.25).toFixed(2);
+      // Calculate lifestyle expenses (≤ 20% of income)
+      const lifestyleExpenses = income * 0.2;
+
+      // Calculate savings and investments (≥ 20%-30% of income)
+      const savingsInvestments = income * 0.25; // Assuming 25% as the midpoint
+
+      // Update the DOM with calculated values
+      document.getElementById("fixedExpensesAmount").textContent = fixedExpenses.toFixed(2);
+      document.getElementById("livingExpensesAmount").textContent = livingExpenses.toFixed(2);
+      document.getElementById("lifestyleExpensesAmount").textContent = lifestyleExpenses.toFixed(2);
+      document.getElementById("savingsInvestmentsAmount").textContent = savingsInvestments.toFixed(2);
     }
 
     function renderBudgetData() {

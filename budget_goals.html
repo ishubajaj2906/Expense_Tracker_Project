@@ -16,21 +16,26 @@
     }
   </script>
 
+  <!-- Navbar -->
   <nav class="navbar navbar-dark navbar-expand-lg bg-dark">
     <div class="container">
       <a class="navbar-brand fw-bold" href="index.html">💰 Expense Tracker</a>
       <div class="dropdown ms-auto">
-        <button class="btn btn-light position-relative" id="notificationButton">
+        <button class="btn btn-light position-relative" id="notificationButton" onclick="toggleNotifications()">
           🔔 Notifications <span class="badge bg-danger" id="notificationCount">0</span>
         </button>
-        <ul class="dropdown-menu" id="notificationList">
-          <li class="dropdown-item text-center">No new notifications</li>
+        <ul class="dropdown-menu dropdown-menu-end p-3" id="notificationDropdown" style="display: none;">
+          <h6 class="dropdown-header">Notifications</h6>
+          <ul class="list-group" id="notificationList">
+            <li class="list-group-item text-center">No new notifications</li>
+          </ul>
         </ul>
         <button class="btn btn-danger ms-2" onclick="logout()">Logout</button>
       </div>
     </div>
   </nav>
 
+  <!-- Main Content -->
   <div class="container mt-5">
     <h1 class="text-center mb-4">Set Your Budget & Financial Goals</h1>
     <div class="card p-4 shadow-lg">
@@ -80,7 +85,8 @@
       <div id="goalDisplay" class="text-center mt-3 fw-bold"></div>
     </div>
 
-    <div class="card p-4 mt-4 shadow-lg">
+    <!-- 50-30-20 Rule Recommendation -->
+    <!-- <div class="card p-4 mt-4 shadow-lg">
       <h3 class="text-center">Recommended Budget Allocation</h3>
       <p class="text-center">Based on the 50-30-20 rule (after fixed expenses):</p>
       <ul class="list-group">
@@ -88,22 +94,35 @@
         <li class="list-group-item"><strong>Wants (30%):</strong> ₹<span id="wantsAmount">0</span></li>
         <li class="list-group-item"><strong>Savings (20%):</strong> ₹<span id="savingsAmount">0</span></li>
       </ul>
-    </div>
+    </div> -->
 
+    <!-- CA-Approved Budget Recommendation -->
     <div class="card p-4 mt-4 shadow-lg">
-      <h3 class="text-center mb-3">Category-wise Budget Estimation</h3>
-      <button class="btn btn-primary w-100" onclick="showCategoryEstimates()">Show Category-wise Estimate</button>
-      <div id="categoryEstimates" class="mt-3 text-center fw-bold"></div>
+      <div class="row">
+        <div class="col-md-6 offset-md-3">
+          <h3 class="text-center">Recommended Budget Allocation</h3>
+          <p class="text-center">Based on CA-approved guidelines:</p>
+          <ul class="list-group">
+            <li class="list-group-item"><strong>Fixed Expenses (≤ 50%):</strong> ₹<span id="fixedExpensesAmount">0</span></li>
+            <li class="list-group-item"><strong>Living Expenses (20%-30%):</strong> ₹<span id="livingExpensesAmount">0</span></li>
+            <li class="list-group-item"><strong>Lifestyle Expenses (≤ 20%):</strong> ₹<span id="lifestyleExpensesAmount">0</span></li>
+            <li class="list-group-item"><strong>Savings & Investments (≥ 20%-30%):</strong> ₹<span id="savingsInvestmentsAmount">0</span></li>
+          </ul>
+        </div>
+      </div>
     </div>
 
-    <div id="impulseWarning" class="mt-3 text-center"></div>
+    <!-- Goal Progress Section -->
+    <div class="card p-4 mt-4 shadow-lg">
+      <div id="impulseWarning" class="mt-3 text-center"></div>
 
-    <div class="mt-5">
-      <h3 class="text-center">Goal Progress</h3>
-      <div class="progress mt-2" style="height: 25px;">
-        <div id="goalProgressBar" class="progress-bar bg-success" role="progressbar" style="width: 0%;">0%</div>
+      <div class="mt-5">
+        <h3 class="text-center">Budget Usage</h3>
+        <div class="progress mt-2" style="height: 25px;">
+          <div id="goalProgressBar" class="progress-bar bg-success" role="progressbar" style="width: 0%;">0%</div>
+        </div>
+        <p class="text-center mt-2"><strong id="progressText">Track your savings goal progress here!</strong></p>
       </div>
-      <p class="text-center mt-2"><strong id="progressText">Track your savings goal progress here!</strong></p>
     </div>
   </div>
 
@@ -111,6 +130,7 @@
     <p>&copy; 2025 Expense Tracker | Plan your goals 🎯</p>
   </footer>
 
+  <!-- Script Section -->
   <script>
     function getUserBudgetData() {
       const allBudgets = JSON.parse(localStorage.getItem("budgets")) || {};
@@ -126,11 +146,9 @@
       let allBudgets = JSON.parse(localStorage.getItem("budgets")) || {};
       allBudgets[currentUserEmail] = data;
       localStorage.setItem("budgets", JSON.stringify(allBudgets));
-
       let flatBudgets = JSON.parse(localStorage.getItem("budgetsFlat")) || {};
       flatBudgets[currentUserEmail] = data.budget;
       localStorage.setItem("budgetsFlat", JSON.stringify(flatBudgets));
-
       localStorage.setItem("userBudget", data.budget);
     }
 
@@ -185,12 +203,23 @@
       const emi = Number(document.getElementById("emiExpense").value);
       const others = Number(document.getElementById("otherFixedExpense").value);
 
-      const fixedTotal = rent + medical + emi + others;
-      const remaining = income - fixedTotal;
+      // Calculate fixed expenses (EMI + Rent)
+      const fixedExpenses = rent + emi;
 
-      document.getElementById("needsAmount").textContent = (remaining * 0.5).toFixed(2);
-      document.getElementById("wantsAmount").textContent = (remaining * 0.3).toFixed(2);
-      document.getElementById("savingsAmount").textContent = (remaining * 0.2).toFixed(2);
+      // Calculate living expenses (20%-30% of income)
+      const livingExpenses = income * 0.25; // Assuming 25% as the midpoint
+
+      // Calculate lifestyle expenses (≤ 20% of income)
+      const lifestyleExpenses = income * 0.2;
+
+      // Calculate savings and investments (≥ 20%-30% of income)
+      const savingsInvestments = income * 0.25; // Assuming 25% as the midpoint
+
+      // Update the DOM with calculated values
+      document.getElementById("fixedExpensesAmount").textContent = fixedExpenses.toFixed(2);
+      document.getElementById("livingExpensesAmount").textContent = livingExpenses.toFixed(2);
+      document.getElementById("lifestyleExpensesAmount").textContent = lifestyleExpenses.toFixed(2);
+      document.getElementById("savingsInvestmentsAmount").textContent = savingsInvestments.toFixed(2);
     }
 
     function renderBudgetData() {
@@ -206,44 +235,37 @@
       updateBudgetRecommendation();
     }
 
-    function showCategoryEstimates() {
-      const userData = getUserBudgetData();
-      const budget = userData.budget;
+    document.getElementById("budgetForm").addEventListener("submit", function (e) {
+      e.preventDefault();
 
-      if (budget <= 0) {
-        document.getElementById("categoryEstimates").innerHTML = "⚠️ Please set your monthly budget first.";
+      // Get input values
+      const income = Number(document.getElementById("monthlyIncome").value);
+      const budget = Number(document.getElementById("monthlyBudget").value);
+      const goal = Number(document.getElementById("financialGoal").value);
+      const rent = Number(document.getElementById("rentExpense").value);
+      const medical = Number(document.getElementById("medicalExpense").value);
+      const emi = Number(document.getElementById("emiExpense").value);
+      const others = Number(document.getElementById("otherFixedExpense").value);
+
+      // Validation: Check if any value is negative
+      if (income <= 0 || budget <= 0 || goal <= 0 || rent < 0 || medical < 0 || emi < 0 || others < 0) {
+        alert("❌ All amounts must be positive values!");
         return;
       }
 
-      const categories = {
-        Food: 0.30,
-        Shopping: 0.20,
-        Bills: 0.25,
-        Transport: 0.25
-      };
-
-      let estimateHTML = "<h5 class='mb-3'>📊 Recommended Budget Estimate:</h5><ul class='list-group'>";
-      for (let [category, percent] of Object.entries(categories)) {
-        const amount = (budget * percent).toFixed(2);
-        estimateHTML += `<li class='list-group-item'><strong>${category}:</strong> ₹${amount}</li>`;
-      }
-      estimateHTML += "</ul>";
-      document.getElementById("categoryEstimates").innerHTML = estimateHTML;
-    }
-
-    document.getElementById("budgetForm").addEventListener("submit", function (e) {
-      e.preventDefault();
+      // Save data if validation passes
       const data = {
-        income: Number(document.getElementById("monthlyIncome").value),
-        budget: Number(document.getElementById("monthlyBudget").value),
-        goal: Number(document.getElementById("financialGoal").value),
+        income: income,
+        budget: budget,
+        goal: goal,
         fixed: {
-          rent: Number(document.getElementById("rentExpense").value),
-          medical: Number(document.getElementById("medicalExpense").value),
-          emi: Number(document.getElementById("emiExpense").value),
-          others: Number(document.getElementById("otherFixedExpense").value)
+          rent: rent,
+          medical: medical,
+          emi: emi,
+          others: others
         }
       };
+
       saveUserBudgetData(data);
       renderBudgetData();
       alert("✅ Budget and goals saved successfully!");

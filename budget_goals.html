@@ -9,13 +9,12 @@
 </head>
 <body>
   <script>
-    const currentUserEmail = localStorage.getItem("currentUserEmail");
-    if (!localStorage.getItem("isLoggedIn") || !currentUserEmail) {
+    if (!localStorage.getItem("isLoggedIn") || !localStorage.getItem("currentUserEmail")) {
       alert("User not logged in. Redirecting...");
       window.location.href = "login.html";
     }
   </script>
-
+  
   <!-- Navbar -->
   <nav class="navbar navbar-dark navbar-expand-lg bg-dark">
     <div class="container">
@@ -85,17 +84,6 @@
       <div id="goalDisplay" class="text-center mt-3 fw-bold"></div>
     </div>
 
-    <!-- 50-30-20 Rule Recommendation -->
-    <!-- <div class="card p-4 mt-4 shadow-lg">
-      <h3 class="text-center">Recommended Budget Allocation</h3>
-      <p class="text-center">Based on the 50-30-20 rule (after fixed expenses):</p>
-      <ul class="list-group">
-        <li class="list-group-item"><strong>Needs (50%):</strong> ₹<span id="needsAmount">0</span></li>
-        <li class="list-group-item"><strong>Wants (30%):</strong> ₹<span id="wantsAmount">0</span></li>
-        <li class="list-group-item"><strong>Savings (20%):</strong> ₹<span id="savingsAmount">0</span></li>
-      </ul>
-    </div> -->
-
     <!-- CA-Approved Budget Recommendation -->
     <div class="card p-4 mt-4 shadow-lg">
       <div class="row">
@@ -103,25 +91,12 @@
           <h3 class="text-center">Recommended Budget Allocation</h3>
           <p class="text-center">Based on CA-approved guidelines:</p>
           <ul class="list-group">
-            <li class="list-group-item"><strong>Fixed Expenses (≤ 50%):</strong> ₹<span id="fixedExpensesAmount">0</span></li>
-            <li class="list-group-item"><strong>Living Expenses (20%-30%):</strong> ₹<span id="livingExpensesAmount">0</span></li>
-            <li class="list-group-item"><strong>Lifestyle Expenses (≤ 20%):</strong> ₹<span id="lifestyleExpensesAmount">0</span></li>
-            <li class="list-group-item"><strong>Savings & Investments (≥ 20%-30%):</strong> ₹<span id="savingsInvestmentsAmount">0</span></li>
+            <li class="list-group-item"><strong>Fixed Expenses :</strong> ₹<span id="fixedExpensesAmount">0.00</span></li>
+            <li class="list-group-item"><strong>Living Expenses :</strong> ₹<span id="livingExpensesAmount">0.00</span></li>
+            <li class="list-group-item"><strong>Lifestyle Expenses :</strong> ₹<span id="lifestyleExpensesAmount">0.00</span></li>
+            <li class="list-group-item"><strong>Savings & Investments :</strong> ₹<span id="savingsInvestmentsAmount">0.00</span></li>
           </ul>
         </div>
-      </div>
-    </div>
-
-    <!-- Goal Progress Section -->
-    <div class="card p-4 mt-4 shadow-lg">
-      <div id="impulseWarning" class="mt-3 text-center"></div>
-
-      <div class="mt-5">
-        <h3 class="text-center">Budget Usage</h3>
-        <div class="progress mt-2" style="height: 25px;">
-          <div id="goalProgressBar" class="progress-bar bg-success" role="progressbar" style="width: 0%;">0%</div>
-        </div>
-        <p class="text-center mt-2"><strong id="progressText">Track your savings goal progress here!</strong></p>
       </div>
     </div>
   </div>
@@ -132,6 +107,8 @@
 
   <!-- Script Section -->
   <script>
+    const currentUserEmail = localStorage.getItem("currentUserEmail");
+
     function getUserBudgetData() {
       const allBudgets = JSON.parse(localStorage.getItem("budgets")) || {};
       return allBudgets[currentUserEmail] || {
@@ -146,54 +123,10 @@
       let allBudgets = JSON.parse(localStorage.getItem("budgets")) || {};
       allBudgets[currentUserEmail] = data;
       localStorage.setItem("budgets", JSON.stringify(allBudgets));
+      localStorage.setItem("userBudget", data.budget);
       let flatBudgets = JSON.parse(localStorage.getItem("budgetsFlat")) || {};
       flatBudgets[currentUserEmail] = data.budget;
       localStorage.setItem("budgetsFlat", JSON.stringify(flatBudgets));
-      localStorage.setItem("userBudget", data.budget);
-    }
-
-    function getUserExpenses() {
-      const expenses = JSON.parse(localStorage.getItem("expenses")) || {};
-      return expenses[currentUserEmail] || [];
-    }
-
-    function updateProgress() {
-      const userData = getUserBudgetData();
-      const userExpenses = getUserExpenses();
-      const totalSpent = userExpenses.reduce((sum, exp) => sum + Number(exp.amount), 0);
-
-      let progress = 0;
-      if (userData.goal > 0) {
-        progress = Math.min((totalSpent / userData.budget) * 100, 100);
-      }
-
-      document.getElementById("goalProgressBar").style.width = `${progress}%`;
-      document.getElementById("goalProgressBar").textContent = `${progress.toFixed(1)}%`;
-      document.getElementById("progressText").textContent = `You've spent ₹${totalSpent} out of your monthly budget of ₹${userData.budget}.`;
-
-      warnImpulseBuying(userExpenses);
-    }
-
-    function warnImpulseBuying(expenses) {
-      const discretionaryCategories = ["shopping", "entertainment", "dining", "luxury"];
-      const impulseThreshold = 0.3;
-      const userData = getUserBudgetData();
-      if (userData.income <= 0) return;
-
-      const discretionarySpending = expenses
-        .filter(exp => discretionaryCategories.includes(exp.category))
-        .reduce((sum, exp) => sum + Number(exp.amount), 0);
-
-      const discretionaryLimit = userData.income * impulseThreshold;
-      const warningMessage = document.getElementById("impulseWarning");
-
-      if (discretionarySpending > discretionaryLimit) {
-        warningMessage.innerHTML = `⚠ You are overspending on discretionary items! Consider prioritizing savings and essentials.`;
-        warningMessage.classList.add("alert", "alert-warning");
-      } else {
-        warningMessage.innerHTML = "";
-        warningMessage.classList.remove("alert", "alert-warning");
-      }
     }
 
     function updateBudgetRecommendation() {
@@ -203,19 +136,11 @@
       const emi = Number(document.getElementById("emiExpense").value);
       const others = Number(document.getElementById("otherFixedExpense").value);
 
-      // Calculate fixed expenses (EMI + Rent)
-      const fixedExpenses = rent + emi;
-
-      // Calculate living expenses (20%-30% of income)
-      const livingExpenses = income * 0.25; // Assuming 25% as the midpoint
-
-      // Calculate lifestyle expenses (≤ 20% of income)
+      const fixedExpenses = rent + emi + medical + others;
+      const livingExpenses = income * 0.25;
       const lifestyleExpenses = income * 0.2;
+      const savingsInvestments = income * 0.25;
 
-      // Calculate savings and investments (≥ 20%-30% of income)
-      const savingsInvestments = income * 0.25; // Assuming 25% as the midpoint
-
-      // Update the DOM with calculated values
       document.getElementById("fixedExpensesAmount").textContent = fixedExpenses.toFixed(2);
       document.getElementById("livingExpensesAmount").textContent = livingExpenses.toFixed(2);
       document.getElementById("lifestyleExpensesAmount").textContent = lifestyleExpenses.toFixed(2);
@@ -227,18 +152,15 @@
       document.getElementById("monthlyIncome").value = userData.income;
       document.getElementById("monthlyBudget").value = userData.budget;
       document.getElementById("financialGoal").value = userData.goal;
-      document.getElementById("rentExpense").value = userData.fixed?.rent || 0;
-      document.getElementById("medicalExpense").value = userData.fixed?.medical || 0;
-      document.getElementById("emiExpense").value = userData.fixed?.emi || 0;
-      document.getElementById("otherFixedExpense").value = userData.fixed?.others || 0;
-      updateProgress();
-      updateBudgetRecommendation();
+      document.getElementById("rentExpense").value = userData.fixed.rent;
+      document.getElementById("medicalExpense").value = userData.fixed.medical;
+      document.getElementById("emiExpense").value = userData.fixed.emi;
+      document.getElementById("otherFixedExpense").value = userData.fixed.others;
     }
 
-    document.getElementById("budgetForm").addEventListener("submit", function (e) {
-      e.preventDefault();
+    function handleBudgetSubmit(event) {
+      event.preventDefault();
 
-      // Get input values
       const income = Number(document.getElementById("monthlyIncome").value);
       const budget = Number(document.getElementById("monthlyBudget").value);
       const goal = Number(document.getElementById("financialGoal").value);
@@ -247,36 +169,41 @@
       const emi = Number(document.getElementById("emiExpense").value);
       const others = Number(document.getElementById("otherFixedExpense").value);
 
-      // Validation: Check if any value is negative
-      if (income <= 0 || budget <= 0 || goal <= 0 || rent < 0 || medical < 0 || emi < 0 || others < 0) {
-        alert("❌ All amounts must be positive values!");
+      const totalBudgetAndGoal = budget + goal;
+      if (totalBudgetAndGoal > income) {
+        alert("Error: Your monthly budget and savings goal combined cannot exceed your monthly income.");
         return;
       }
 
-      // Save data if validation passes
-      const data = {
+      const budgetData = {
         income: income,
         budget: budget,
         goal: goal,
-        fixed: {
-          rent: rent,
-          medical: medical,
-          emi: emi,
-          others: others
-        }
+        fixed: { rent, medical, emi, others }
       };
 
-      saveUserBudgetData(data);
-      renderBudgetData();
-      alert("✅ Budget and goals saved successfully!");
-    });
+      saveUserBudgetData(budgetData);
+      alert("Budget & Goals Saved!");
+
+      updateBudgetRecommendation();
+    }
+
+    function toggleNotifications() {
+      const dropdown = document.getElementById("notificationDropdown");
+      dropdown.style.display = dropdown.style.display === "none" ? "block" : "none";
+    }
 
     function logout() {
-      localStorage.clear();
+      localStorage.removeItem("isLoggedIn");
+      localStorage.removeItem("currentUserEmail");
       window.location.href = "login.html";
     }
 
-    document.addEventListener("DOMContentLoaded", renderBudgetData);
+    window.addEventListener("DOMContentLoaded", () => {
+      renderBudgetData();
+      updateBudgetRecommendation();
+      document.getElementById("budgetForm").addEventListener("submit", handleBudgetSubmit);
+    });
   </script>
 </body>
 </html>

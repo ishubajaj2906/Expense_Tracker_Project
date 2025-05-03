@@ -18,22 +18,10 @@
   <!-- Navbar -->
   <nav class="navbar navbar-dark navbar-expand-lg bg-dark">
     <div class="container d-flex justify-content-between align-items-center">
-        <a class="navbar-brand fw-bold" href="index.html">💰 Expense Tracker</a>
-<div class="d-flex justify-content-center align-items-center flex-grow-1">
-        <button class="btn btn-outline-light position-relative me-2" onclick="toggleNotifications()">
-          <i class="bi bi-bell-fill"></i> Notifications
-          <span id="notificationCount" class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger d-none">0</span>
-        </button>
-      </div>
-
+      <a class="navbar-brand fw-bold" href="index.html">💰 Expense Tracker</a>
       <button class="btn btn-danger" onclick="logout()">Logout</button>
     </div>
   </nav>
-
-  <!-- Notification Box -->
-  <div class="container mt-2 d-none" id="notificationBox">
-    <ul id="notificationList" class="list-group shadow border"></ul>
-  </div>
 
   <!-- Main Container -->
   <div class="container mt-5">
@@ -50,9 +38,10 @@
             <option value="Cash">Cash</option>
           </select>
         </div>
+
         <div class="col-md-4">
           <label class="form-label">Category</label>
-          <select class="form-control" id="expenseCategory" required>
+          <select class="form-control" id="expenseCategory" required onchange="toggleCustomCategoryInput(this.value)">
             <option value="" disabled selected>Select Category</option>
             <option value="Food">Food</option>
             <option value="Transport">Transport</option>
@@ -60,13 +49,17 @@
             <option value="Bills">Bills</option>
             <option value="Shopping">Shopping</option>
             <option value="Savings">Savings</option>
-            <option value="Other">Other</option>
+            <option value="Other">Other (Add your own)</option>
           </select>
+          <input type="text" class="form-control mt-2 d-none" id="customCategory" placeholder="Enter custom category" />
         </div>
+
         <div class="col-md-4">
           <label class="form-label">Amount (₹)</label>
           <input type="number" class="form-control" id="expenseAmount" required />
+          <span id="amountError" class="text-danger mt-2 d-none"></span>
         </div>
+
         <div class="col-md-4 mt-3">
           <label class="form-label">Date</label>
           <input type="date" class="form-control" id="expenseDate" required />
@@ -95,6 +88,9 @@
       </thead>
       <tbody id="expenseTable"></tbody>
     </table>
+
+    <!-- Recommendations Section -->
+    <div id="recommendations" class="mt-4"></div>
   </div>
 
   <!-- Scripts -->
@@ -142,6 +138,7 @@
       });
 
       updateBudgetDisplay();
+      generateRecommendations(); // Generate recommendations after rendering expenses
     };
 
     const deleteExpense = (index) => {
@@ -151,75 +148,117 @@
       renderExpenses();
     };
 
-    const checkBudgetWarnings = (amount) => {
-      const budget = getUserBudget();
-      const total = getTotalExpenses();
-
-      if (total > budget) {
-        saveNotification("🚨 Budget Exceeded! You've spent more than your budget.");
-      } else if (Number(amount) > budget * 0.3) {
-        saveNotification(`⚠️ High Expense Alert: ₹${amount} spent at once!`);
-      }
-    };
-
-    const toggleNotifications = () => {
-      const box = document.getElementById("notificationBox");
-      box.classList.toggle("d-none");
-    };
-
-    const saveNotification = (message) => {
-      const key = `notifications_${currentUserEmail}`;
-      const notifications = JSON.parse(localStorage.getItem(key)) || [];
-      notifications.unshift({ message, time: new Date().toLocaleTimeString() });
-
-      if (notifications.length > 10) notifications.pop();
-      localStorage.setItem(key, JSON.stringify(notifications));
-      displayNotifications();
-    };
-
-    const displayNotifications = () => {
-      const key = `notifications_${currentUserEmail}`;
-      const notifications = JSON.parse(localStorage.getItem(key)) || [];
-      const list = document.getElementById("notificationList");
-      const count = document.getElementById("notificationCount");
-
-      if (notifications.length === 0) {
-        list.innerHTML = `<li class="list-group-item text-center">No notifications yet</li>`;
-        count.classList.add("d-none");
+    function toggleCustomCategoryInput(value) {
+      const customInput = document.getElementById("customCategory");
+      if (value === "Other") {
+        customInput.classList.remove("d-none");
+        customInput.required = true;
       } else {
-        list.innerHTML = notifications.map(n => `<li class="list-group-item">${n.message} <small class="text-muted">${n.time}</small></li>`).join("");
-        count.textContent = notifications.length;
-        count.classList.remove("d-none");
+        customInput.classList.add("d-none");
+        customInput.required = false;
+        customInput.value = "";
       }
-    };
+    }
 
-    const logout = () => {
-      localStorage.clear();
-      window.location.href = "login.html";
+    const generateRecommendations = () => {
+      const expenses = getUserExpenses();
+      const recommendations = [];
+      
+      const categoryCount = expenses.reduce((acc, expense) => {
+        acc[expense.category] = (acc[expense.category] || 0) + 1;
+        return acc;
+      }, {});
+
+      // More detailed recommendations based on expense categories
+      if (categoryCount["Food"] && categoryCount["Food"] >= 3) {
+        recommendations.push("You’ve been spending quite a bit on food! Consider meal prepping or trying cost-effective recipes.");
+      }
+
+      if (categoryCount["Transport"] && categoryCount["Transport"] >= 2) {
+        recommendations.push("You are spending on transport frequently. Look into monthly passes or carpooling to save money.");
+      }
+
+      if (categoryCount["Shopping"] && categoryCount["Shopping"] >= 2) {
+        recommendations.push("You’ve been shopping often. Consider setting a shopping budget or buying second-hand items.");
+      }
+
+      if (categoryCount["Bills"] && categoryCount["Bills"] >= 1) {
+        recommendations.push("Utility bills are a common expense. Explore cheaper options for your services and consider energy-saving habits.");
+      }
+
+      if (categoryCount["Entertainment"] && categoryCount["Entertainment"] >= 2) {
+        recommendations.push("Entertainment expenses are adding up. Try limiting subscriptions or finding cheaper alternatives.");
+      }
+
+      if (categoryCount["Savings"] && categoryCount["Savings"] < 1) {
+        recommendations.push("You haven't saved this month yet! Consider setting aside a percentage of your income for savings.");
+      }
+
+      // General financial tips based on total spending
+      const totalSpent = getTotalExpenses();
+      const budget = getUserBudget();
+      if (totalSpent > budget) {
+        recommendations.push("You’ve exceeded your budget! Try tracking your spending more carefully or setting limits.");
+      } else if (totalSpent > 0.8 * budget) {
+        recommendations.push("You're getting close to your budget limit. Be mindful of future expenses this month.");
+      } else if (totalSpent < 0.2 * budget) {
+        recommendations.push("You're doing great with your expenses! Keep up the good work, and consider saving more.");
+      }
+
+      // Update the recommendations display
+      const recommendationsDiv = document.getElementById("recommendations");
+      if (recommendations.length > 0) {
+        recommendationsDiv.innerHTML = `<h4>Personalized Recommendations:</h4><ul>${recommendations.map(rec => `<li>${rec}</li>`).join('')}</ul>`;
+      } else {
+        recommendationsDiv.innerHTML = "<h4>No recommendations yet.</h4>";
+      }
     };
 
     document.getElementById("expenseForm").addEventListener("submit", function (e) {
       e.preventDefault();
 
+      const selectedCategory = document.getElementById("expenseCategory").value;
+      const customCategory = document.getElementById("customCategory").value.trim();
+      const finalCategory = selectedCategory === "Other" ? customCategory : selectedCategory;
+
       const expense = {
         type: document.getElementById("expenseType").value,
-        category: document.getElementById("expenseCategory").value,
+        category: finalCategory,
         amount: document.getElementById("expenseAmount").value,
         date: document.getElementById("expenseDate").value
       };
+
+      const amountError = document.getElementById("amountError");
+      amountError.classList.add("d-none");
+
+      if (Number(expense.amount) <= 0) {
+        amountError.classList.remove("d-none");
+        amountError.innerHTML = "❌ Negative numbers or zero are not allowed in Amount.";
+        return;
+      }
+
+      if (selectedCategory === "Other" && !customCategory) {
+        alert("Please enter a custom category.");
+        return;
+      }
 
       const expenses = getUserExpenses();
       expenses.push(expense);
       saveUserExpenses(expenses);
       renderExpenses();
-      checkBudgetWarnings(expense.amount);
       this.reset();
+      toggleCustomCategoryInput(""); // Hide custom input after submit
     });
 
     document.addEventListener("DOMContentLoaded", () => {
       renderExpenses();
-      displayNotifications();
+      updateBudgetDisplay();
     });
+
+    const logout = () => {
+      localStorage.clear();
+      window.location.href = "login.html";
+    };
   </script>
 </body>
 </html>
